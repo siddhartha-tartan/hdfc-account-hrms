@@ -57,23 +57,8 @@ export default function Dashboard() {
         { id: "CBS-240103", name: "Sara Khan", phone: "9700012345", email: "sara.khan@cholabusiness.example", journey: "ntb" as JourneyKey, dob: "1997-02-06", pan: "TREWS4455S", fatherName: "Imran Khan", motherName: "Farah Khan", currentAddress: "Salt Lake, Kolkata 700091", income: "980000" },
     ];
 
-    // Persist invited status locally for HR view
-    React.useEffect(() => {
-        try {
-            const raw = localStorage.getItem("hr_invited_employee_ids");
-            if (raw) setInvitedEmployeeIds(JSON.parse(raw));
-        } catch {
-            // ignore
-        }
-    }, []);
-
-    React.useEffect(() => {
-        try {
-            localStorage.setItem("hr_invited_employee_ids", JSON.stringify(invitedEmployeeIds));
-        } catch {
-            // ignore
-        }
-    }, [invitedEmployeeIds]);
+    // NOTE: We intentionally do NOT persist invited state across reloads.
+    // A hard refresh should reset buttons back to "Invite".
 
     const handleInvite = async (emp: (typeof employees)[number]) => {
         if (invitedEmployeeIds[emp.id]) return;
