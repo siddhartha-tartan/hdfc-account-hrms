@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createInviteToken } from "@/lib/inviteToken";
 
 type JourneyType = "ntb" | "etb-nk" | "etb" | "journey2";
 
@@ -61,11 +62,19 @@ export async function POST(req: Request) {
     lastUpdatedAt: now,
   };
 
-  getStore().set(inviteId, record);
+  // Vercel/serverless-safe: embed invite details into a URL-safe token
+  // so the journey link works without relying on in-memory storage.
+  const token = createInviteToken({
+    id: record.id,
+    journeyType: record.journeyType,
+    employee: record.employee,
+    prefilledData: record.prefilledData,
+    issuedAt: record.createdAt,
+  });
 
   const origin = new URL(req.url).origin;
-  const journeyUrl = `${origin}/journey/${encodeURIComponent(inviteId)}`;
+  const journeyUrl = `${origin}/journey/${encodeURIComponent(token)}`;
 
-  return NextResponse.json({ inviteId, journeyUrl });
+  return NextResponse.json({ inviteId: token, journeyUrl });
 }
 

@@ -8,6 +8,7 @@ import { STEP_COMPONENTS } from "@/app/context/stepDefinitions";
 import { useJourney } from "@/app/context/JourneyContext";
 import StepError from "@/app/components/steps/StepError";
 import { AnimatePresence } from "framer-motion";
+import { parseInviteToken } from "@/lib/inviteToken";
 
 type InviteApiResponse = {
   id: string;
@@ -43,6 +44,22 @@ export default function JourneyInvitePage() {
         setIsLoading(true);
         setLoadError(null);
 
+        // Stateless token (Vercel-safe): decode locally and start journey without API.
+        const tokenPayload = parseInviteToken(inviteId);
+        if (tokenPayload) {
+          startedRef.current = true;
+          startJourney(tokenPayload.journeyType, {
+            inviteId: tokenPayload.id,
+            employeeId: tokenPayload.employee.id,
+            name: tokenPayload.employee.name,
+            email: tokenPayload.employee.email,
+            mobileNumber: tokenPayload.employee.phone,
+            ...(tokenPayload.prefilledData || {}),
+          });
+          return;
+        }
+
+        // Backward-compatible path: legacy UUID invite stored in API memory (local dev only).
         const res = await fetch(`/api/invites/${encodeURIComponent(inviteId)}`, {
           method: "GET",
           signal: controller.signal,

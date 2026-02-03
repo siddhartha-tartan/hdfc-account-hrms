@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { InviteRecord } from "../route";
+import { parseInviteToken } from "@/lib/inviteToken";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -18,6 +19,22 @@ export async function GET(
   { params }: { params: Promise<{ inviteId: string }> }
 ) {
   const { inviteId } = await params;
+
+  // Vercel-safe stateless invites: decode token and return a record-like shape.
+  const tokenPayload = parseInviteToken(inviteId);
+  if (tokenPayload) {
+    const record: InviteRecord = {
+      id: tokenPayload.id,
+      employee: tokenPayload.employee,
+      journeyType: tokenPayload.journeyType,
+      prefilledData: tokenPayload.prefilledData ?? {},
+      status: "opened",
+      createdAt: tokenPayload.issuedAt,
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    return NextResponse.json(record);
+  }
+
   const record = getStore().get(inviteId);
   if (!record) {
     return NextResponse.json({ error: "Invite not found." }, { status: 404 });
@@ -42,6 +59,13 @@ export async function PATCH(
   { params }: { params: Promise<{ inviteId: string }> }
 ) {
   const { inviteId } = await params;
+
+  // Stateless token invites have no server-side persistence; accept PATCH as no-op.
+  const tokenPayload = parseInviteToken(inviteId);
+  if (tokenPayload) {
+    return NextResponse.json({ ok: true });
+  }
+
   const record = getStore().get(inviteId);
   if (!record) {
     return NextResponse.json({ error: "Invite not found." }, { status: 404 });
