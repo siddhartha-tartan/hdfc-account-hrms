@@ -59,6 +59,19 @@ export default function Dashboard() {
 
     // NOTE: We intentionally do NOT persist invited state across reloads.
     // A hard refresh should reset buttons back to "Invite".
+    //
+    // Some browsers (notably Safari) may restore pages from the back/forward cache (bfcache),
+    // which can preserve in-memory React state. Force-reset on bfcache restore so the dashboard
+    // always returns to the default "Invite" state when revisiting.
+    React.useEffect(() => {
+        const onPageShow = (e: PageTransitionEvent) => {
+            if (e.persisted) {
+                setInvitedEmployeeIds({});
+            }
+        };
+        window.addEventListener("pageshow", onPageShow);
+        return () => window.removeEventListener("pageshow", onPageShow);
+    }, []);
 
     const handleInvite = async (emp: (typeof employees)[number]) => {
         if (invitedEmployeeIds[emp.id]) return;
